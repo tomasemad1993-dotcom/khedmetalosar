@@ -18,7 +18,7 @@ jobs:
       - name: Extract Android project
         run: |
           mkdir buildsrc
-          unzip -q KhedmetAlosar_Android_APK_Builder.zip -d buildsrc
+          unzip -q KhedmetAlosar_Android_Updated.zip -d project
 
           if [ -f buildsrc/settings.gradle ]; then
             echo "PROJECT_DIR=buildsrc" >> $GITHUB_ENV
