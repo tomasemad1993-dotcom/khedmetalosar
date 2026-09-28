@@ -1,10 +1,9 @@
 name: Build Android APK
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
@@ -14,35 +13,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
       - name: Extract Android project
         run: |
-          mkdir project
-          unzip -q KhedmetAlosar_Android_APK_Builder.zip -d project
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)
+          echo "Using: $ZIP_FILE"
+          mkdir buildsrc
+          unzip -q "$ZIP_FILE" -d buildsrc
 
-      - name: Find Android project
+      - name: Build debug APK
         run: |
-          echo "Searching for settings.gradle..."
-          find project -name settings.gradle -type f
-
-      - name: Build APK
-        run: |
-          PROJECT_DIR=$(dirname "$(find project -name settings.gradle -type f | head -1)")
-          cd "$PROJECT_DIR"
-          gradle :app:assembleDebug --no-daemon
+          gradle -p buildsrc :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: KhedmetAlosar-APK
-          path: project/**/app/build/outputs/apk/debug/app-debug.apk
+          name: KhedmetAlosar-debug-apk
+          path: buildsrc/app/build/outputs/apk/debug/app-debug.apk
