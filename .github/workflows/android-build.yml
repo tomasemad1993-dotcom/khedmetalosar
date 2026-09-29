@@ -27,16 +27,48 @@ jobs:
       - name: Extract Android project
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)
-          echo "Using: $ZIP_FILE"
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: No ZIP file found"
+            exit 1
+          fi
+
+          echo "Using ZIP: $ZIP_FILE"
+
+          rm -rf buildsrc
           mkdir buildsrc
           unzip -q "$ZIP_FILE" -d buildsrc
 
+          echo "Extracted files:"
+          find buildsrc -maxdepth 4 -type f | head -100
+
+      - name: Find Android project
+        run: |
+          SETTINGS=$(find buildsrc -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) | head -n 1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: settings.gradle not found"
+            find buildsrc -maxdepth 5 -type f
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS")
+
+          echo "Android project found at:"
+          echo "$PROJECT_DIR"
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
       - name: Build debug APK
         run: |
-          gradle -p buildsrc :app:assembleDebug --no-daemon
+          echo "Building project from:"
+          echo "$PROJECT_DIR"
+
+          gradle -p "$PROJECT_DIR" :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: KhedmetAlosar-debug-apk
-          path: buildsrc/app/build/outputs/apk/debug/app-debug.apk
+          path: "**/app/build/outputs/apk/debug/app-debug.apk"
+          if-no-files-found: error
